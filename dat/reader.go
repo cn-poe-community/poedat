@@ -77,7 +77,6 @@ func ReadString(b []byte, dataVariable []byte) string {
 	if end == -1 {
 		log.Fatalf("read string failed: no matched string terminator ")
 	}
-	log.Println(varOffset, end)
 	utf8bytes, err := unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM).NewDecoder().Bytes(dataVariable[varOffset : end+varOffset])
 	if err != nil {
 		log.Fatalf("read string failed: %v", err)
