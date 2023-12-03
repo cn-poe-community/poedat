@@ -34,7 +34,7 @@ func DefaultFieldSize() FieldSizes {
 }
 
 // boolean,string,int64,uint64,float64,array,key,keyforeign
-type FieldValue interface{}
+type FieldValue any
 
 func ReadUint32(b []byte) uint32 {
 	return binary.LittleEndian.Uint32(b)

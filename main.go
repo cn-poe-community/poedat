@@ -1,10 +1,8 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"flag"
-	"fmt"
 	"log"
 	"os"
 
@@ -19,29 +17,6 @@ func readFile(path string) []byte {
 		log.Fatal(err)
 	}
 	return data
-}
-
-func saveRowsAsJson(headers []*dat.Header, rows [][]dat.FieldValue, path string) {
-	var buffer bytes.Buffer
-
-	for _, row := range rows {
-		rowMap := map[string]dat.FieldValue{}
-		for i, header := range headers {
-			name := header.Name
-			if len(name) == 0 {
-				name = fmt.Sprintf("Unknown %d", i)
-			}
-			rowMap[name] = row[i]
-		}
-
-		jsonBytes, err := json.MarshalIndent(rowMap, "", "\t")
-		if err != nil {
-			log.Fatal(err)
-		}
-		buffer.WriteString(string(jsonBytes))
-	}
-
-	os.WriteFile(path, buffer.Bytes(), 0644)
 }
 
 var datPath = flag.String("d", "", "the dat file path\n\texported json will saved as {dartPath}.json")
@@ -69,7 +44,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	headers := export.ImportHeaders(*tableName, datFile, &schemaFile)
-	rows := export.ExportAllRows(headers, datFile)
-	saveRowsAsJson(headers, rows, *datPath+".json")
+	jsonBytes := export.DatToJSON(datFile, &schemaFile, *tableName)
+	err = os.WriteFile(*datPath+".json", jsonBytes, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
