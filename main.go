@@ -19,7 +19,7 @@ func readFile(path string) []byte {
 	return data
 }
 
-var datPath = flag.String("d", "", "the dat file path\n\texported json will saved as {dartPath}.json")
+var datPath = flag.String("d", "", "the dat file path\n\texported json will be saved as {dartPath}.json")
 var schemaPath = flag.String("s", "", "the schema file path")
 var tableName = flag.String("t", "", "the table name")
 

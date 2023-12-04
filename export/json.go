@@ -1,7 +1,6 @@
 package export
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -14,7 +13,7 @@ func DatToJSON(datFile *dat.DatFile, shecmaFile *schema.SchemaFile, tableName st
 	headers := ImportHeaders(tableName, datFile, shecmaFile)
 	rows := ExportAllRows(headers, datFile)
 
-	var buffer bytes.Buffer
+	rowMaps := []map[string]dat.FieldValue{}
 
 	for _, row := range rows {
 		rowMap := map[string]dat.FieldValue{}
@@ -26,12 +25,13 @@ func DatToJSON(datFile *dat.DatFile, shecmaFile *schema.SchemaFile, tableName st
 			rowMap[name] = row[i]
 		}
 
-		jsonBytes, err := json.MarshalIndent(rowMap, "", "\t")
-		if err != nil {
-			log.Fatal(err)
-		}
-		buffer.WriteString(string(jsonBytes))
+		rowMaps = append(rowMaps, rowMap)
 	}
 
-	return buffer.Bytes()
+	data, err := json.MarshalIndent(rowMaps, "", "\t")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return data
 }
