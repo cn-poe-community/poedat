@@ -40,6 +40,21 @@ func ImportHeaders(name string, datFile *dat.DatFile, schemaFile *schema.SchemaF
 
 		htype.Array = column.Array
 		switch column.Type {
+		case "u16":
+			htype.Integer = &dat.IntergerType{
+				Unsigned: true,
+				Size:     2,
+			}
+		case "u32":
+			htype.Integer = &dat.IntergerType{
+				Unsigned: true,
+				Size:     4,
+			}
+		case "i16":
+			htype.Integer = &dat.IntergerType{
+				Unsigned: false,
+				Size:     2,
+			}
 		case "i32":
 			htype.Integer = &dat.IntergerType{
 				Unsigned: false,

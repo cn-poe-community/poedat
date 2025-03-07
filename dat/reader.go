@@ -33,11 +33,22 @@ func DefaultFieldSize() FieldSizes {
 	}
 }
 
-// boolean,string,int64,uint64,float64,array,key,keyforeign
+type Key *uint32
+type KeyForeign *uint32
+
+// bool | string | int16 | int32 | uint16 | uint32 | Key | KeyForeign
 type FieldValue any
+
+func ReadUint16(b []byte) uint16 {
+	return binary.LittleEndian.Uint16(b)
+}
 
 func ReadUint32(b []byte) uint32 {
 	return binary.LittleEndian.Uint32(b)
+}
+
+func ReadInt16(b []byte) int16 {
+	return int16(binary.LittleEndian.Uint16(b))
 }
 
 func ReadInt32(b []byte) int32 {
@@ -52,7 +63,7 @@ func ReadFloat32(b []byte) float32 {
 	return n
 }
 
-func ReadKey(b []byte) *uint32 {
+func ReadKey(b []byte) Key {
 	n := binary.LittleEndian.Uint32(b)
 	if n == Mem32Null {
 		return nil
@@ -61,7 +72,7 @@ func ReadKey(b []byte) *uint32 {
 	}
 }
 
-func ReadKeyForeign(b []byte) *uint32 {
+func ReadKeyForeign(b []byte) KeyForeign {
 	n := binary.LittleEndian.Uint32(b)
 	if n == Mem32Null {
 		return nil
@@ -93,6 +104,15 @@ func ReadOne(b []byte, h *Header, datFile *DatFile) FieldValue {
 	} else if t.String {
 		return ReadString(b, dataVariable)
 	} else if t.Integer != nil {
+		if t.Integer.Unsigned && t.Integer.Size == 2 {
+			return ReadUint16(b)
+		}
+		if t.Integer.Unsigned && t.Integer.Size == 4 {
+			return ReadUint32(b)
+		}
+		if !t.Integer.Unsigned && t.Integer.Size == 2 {
+			return ReadInt16(b)
+		}
 		if !t.Integer.Unsigned && t.Integer.Size == 4 {
 			return ReadInt32(b)
 		}
