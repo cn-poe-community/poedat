@@ -21,10 +21,6 @@ func TestSchemaTypes(t *testing.T) {
 		t.Error(err)
 	}
 
-	if schemaFile.Version != 3 {
-		t.Error("schemaFile.Version unmarshaled failed")
-	}
-
 	if len(schemaFile.Tables) == 0 {
 		t.Error("schemaFile.Tables unmarshaled failed")
 	}

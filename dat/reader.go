@@ -9,13 +9,13 @@ import (
 	"golang.org/x/text/encoding/unicode"
 )
 
-//https://github.com/SnosMe/poedat-viewer/blob/master/lib/src/dat/reader.ts
-
-var StringTerminator = []byte{0x00, 0x00, 0x00, 0x00}
+//https://github.com/SnosMe/poe-dat-viewer/blob/master/lib/src/dat/reader.ts
 
 const Mem32Null = 0xfefefefe
 
-type FieldSizes struct {
+var StringTerminator = []byte{0x00, 0x00, 0x00, 0x00}
+
+type FieldSize struct {
 	Bool       int
 	String     int
 	Key        int
@@ -23,8 +23,8 @@ type FieldSizes struct {
 	Array      int
 }
 
-func DefaultFieldSize() FieldSizes {
-	return FieldSizes{
+func DefaultFieldSize() FieldSize {
+	return FieldSize{
 		Bool:       1,
 		String:     8,
 		Key:        8,
@@ -36,7 +36,9 @@ func DefaultFieldSize() FieldSizes {
 type Key *uint32
 type KeyForeign *uint32
 
-// bool | string | int16 | int32 | uint16 | uint32 | Key | KeyForeign
+// bool | string | int16 | int32 | uint16 | uint32 | Key | KeyForeign |
+// [](bool | string | int16 | int32 | uint16 | uint32 | Key | KeyForeign) |
+// [2](bool | string | int16 | int32 | uint16 | uint32 | Key | KeyForeign)
 type FieldValue any
 
 func ReadUint16(b []byte) uint16 {
@@ -95,6 +97,20 @@ func ReadString(b []byte, dataVariable []byte) string {
 	return string(utf8bytes)
 }
 
+func indexStringTerminator(data []byte) int {
+	begin := 0
+	for {
+		i := bytes.Index(data[begin:], StringTerminator)
+		if i == -1 {
+			return i
+		}
+		if (begin+i)%2 == 0 {
+			return begin + i
+		}
+		begin += i + 1
+	}
+}
+
 func ReadOne(b []byte, h *Header, datFile *DatFile) FieldValue {
 	dataVariable := datFile.DataVariable
 
@@ -135,54 +151,48 @@ func ReadOne(b []byte, h *Header, datFile *DatFile) FieldValue {
 func ElementSize(h *Header, datFile *DatFile) int {
 	t := h.Type
 	if t.Boolean {
-		return datFile.FieldSizes.Bool
+		return datFile.FieldSize.Bool
 	} else if t.String {
-		return datFile.FieldSizes.String
+		return datFile.FieldSize.String
 	} else if t.Integer != nil {
 		return t.Integer.Size
 	} else if t.Decimal != nil {
 		return t.Decimal.Size
 	} else if t.Key != nil {
 		if t.Key.Foreign {
-			return datFile.FieldSizes.KeyForeign
+			return datFile.FieldSize.KeyForeign
 		} else {
-			return datFile.FieldSizes.Key
+			return datFile.FieldSize.Key
 		}
 	}
 	return 0
 }
 
-func ReadArray(b []byte, header *Header, dataFile *DatFile) []FieldValue {
-	dataVariable := dataFile.DataVariable
+func ReadArray(b []byte, header *Header, datFile *DatFile) []FieldValue {
+	dataVariable := datFile.DataVariable
 
 	arrayLen := int(ReadUint32(b))
 	if arrayLen == 0 {
 		return nil
 	}
 
-	varOffset := int(ReadUint32(b[dataFile.MemSize:]))
+	varOffset := int(ReadUint32(b[datFile.MemSize:]))
 	values := []FieldValue{}
-	elementSize := ElementSize(header, dataFile)
+	elementSize := ElementSize(header, datFile)
 	for i := 0; i < arrayLen; i++ {
 		var value FieldValue = nil
-		value = ReadOne(dataVariable[varOffset+i*elementSize:], header, dataFile)
+		value = ReadOne(dataVariable[varOffset+i*elementSize:], header, datFile)
 		values = append(values, value)
 	}
 
 	return values
 }
 
-func indexStringTerminator(data []byte) int {
-	begin := 0
-	for {
-		i := bytes.Index(data[begin:], StringTerminator)
-		if i == -1 {
-			return i
-		}
-		if (begin+i)%2 == 0 {
-			return begin + i
-		}
-		begin += i + 1
+func ReadInterval(b []byte, header *Header, datFile *DatFile) [2]FieldValue {
+	elementSize := ElementSize(header, datFile)
+	return [2]FieldValue{
+		ReadOne(b, header, datFile),
+		ReadOne(b[elementSize:], header, datFile),
 	}
 }
 
@@ -191,13 +201,15 @@ func ReadField(b []byte, header *Header, datFile *DatFile) FieldValue {
 
 	if t.Array {
 		return ReadArray(b, header, datFile)
+	} else if t.Interval {
+		return ReadInterval(b, header, datFile)
 	} else {
 		return ReadOne(b, header, datFile)
 	}
 }
 
-func ReadRow(rowIndex int, headers []*Header, datFile *DatFile) []FieldValue {
-	rowBasicOffset := rowIndex * datFile.RowLength
+func ReadRow(rowIdx int, headers []*Header, datFile *DatFile) []FieldValue {
+	rowBasicOffset := rowIdx * datFile.RowLength
 
 	values := []FieldValue{}
 	for _, header := range headers {

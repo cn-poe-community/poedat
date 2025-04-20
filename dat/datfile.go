@@ -6,14 +6,15 @@ import (
 	"errors"
 )
 
-const rowCountSize = 4
+// https://github.com/SnosMe/poe-dat-viewer/blob/master/lib/src/dat/dat-file.ts
+
+const rowCountSize = 4 // 4 bytes for row count
 
 var vdataMagic = []byte{0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb}
 var minFileSize = rowCountSize + len(vdataMagic)
 
-// |--------|--------------|--------|--------------------------
-// row count|              |boundary
-//          |  DataFiexed  |            DataVariable
+// |--------|-------------|------------------------|............
+// row count|  DataFixed  |  boundary(vdataMagic)  |  DataVariable
 
 type DatFile struct {
 	MemSize      int
@@ -21,7 +22,7 @@ type DatFile struct {
 	RowLength    int
 	DataFixed    []byte
 	DataVariable []byte
-	FieldSizes   FieldSizes
+	FieldSize    FieldSize
 }
 
 func ReadDatFile(content []byte) (*DatFile, error) {
@@ -30,18 +31,18 @@ func ReadDatFile(content []byte) (*DatFile, error) {
 	}
 
 	rowCount := binary.LittleEndian.Uint32(content[:rowCountSize])
-	boundary := bytes.Index(content, vdataMagic)
-	if boundary == -1 {
+	boundaryIdx := bytes.Index(content, vdataMagic)
+	if boundaryIdx == -1 {
 		return nil, errors.New("invalid file: section with variable data not found")
 	}
 
 	rowLen := 0
 	if rowCount > 0 {
-		rowLen = (boundary - rowCountSize) / int(rowCount)
+		rowLen = (boundaryIdx - rowCountSize) / int(rowCount)
 	}
 
-	dataFiexed := content[rowCountSize:boundary]
-	dataVariable := content[boundary:]
+	dataFiexed := content[rowCountSize:boundaryIdx]
+	dataVariable := content[boundaryIdx:]
 
 	return &DatFile{
 		MemSize:      8,
@@ -49,6 +50,6 @@ func ReadDatFile(content []byte) (*DatFile, error) {
 		RowLength:    rowLen,
 		DataFixed:    dataFiexed,
 		DataVariable: dataVariable,
-		FieldSizes:   DefaultFieldSize(),
+		FieldSize:    DefaultFieldSize(),
 	}, nil
 }

@@ -2,6 +2,8 @@ package dat
 
 import "log"
 
+// https://github.com/SnosMe/poe-dat-viewer/blob/master/lib/src/dat/header.ts
+
 type Header struct {
 	Name   string
 	Offset int
@@ -9,12 +11,13 @@ type Header struct {
 }
 
 type HeaderType struct {
-	Array   bool
-	Boolean bool
-	Integer *IntergerType
-	Decimal *DecimalType
-	String  bool
-	Key     *KeyType
+	Array    bool
+	Interval bool
+	Boolean  bool
+	Integer  *IntergerType
+	Decimal  *DecimalType
+	String   bool
+	Key      *KeyType
 }
 
 type IntergerType struct {
@@ -30,29 +33,35 @@ type KeyType struct {
 	Foreign bool
 }
 
-func (h *Header) HeaderLength(sizes FieldSizes) int {
+func (h *Header) HeaderLength(f FieldSize) int {
 	t := &h.Type
+
+	count := 1
+	if t.Interval {
+		count = 2
+	}
+
 	if t.Array {
-		return sizes.Array
+		return f.Array
 	}
 	if t.String {
-		return sizes.String
+		return f.String
 	}
 	if t.Key != nil {
 		if t.Key.Foreign {
-			return sizes.KeyForeign
+			return f.KeyForeign
 		} else {
-			return sizes.Key
+			return f.Key
 		}
 	}
 	if t.Integer != nil {
-		return t.Integer.Size
+		return t.Integer.Size * count
 	}
 	if t.Decimal != nil {
-		return t.Decimal.Size
+		return t.Decimal.Size * count
 	}
 	if t.Boolean {
-		return sizes.Bool
+		return f.Bool
 	}
 
 	log.Fatal("Corrupted header")

@@ -7,10 +7,11 @@ Export table as json from dat file.
 # Usage:
 
 ```
-Usage of E:\Projects\poe-dat\poedat.exe:
+Usage of ./poedat.exe:
   -d string
         the dat file path
-                exported json will saved as {dartPath}.json
+  -g int
+        the game version, poe1 is 1, poe2 is 2 (default 1)
   -s string
         the schema file path
   -t string

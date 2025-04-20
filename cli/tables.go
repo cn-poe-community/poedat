@@ -1,4 +1,4 @@
-package export
+package cli
 
 import (
 	"log"
@@ -9,13 +9,14 @@ import (
 
 // https://github.com/SnosMe/poedat-viewer/blob/master/lib/src/cli/export-tables.ts
 
-func ImportHeaders(name string, datFile *dat.DatFile, schemaFile *schema.SchemaFile) []*dat.Header {
+func ImportHeaders(name string, datFile *dat.DatFile, schemaFile *schema.SchemaFile, validFor int) []*dat.Header {
 	var headers []*dat.Header
 	var sch *schema.SchemaTable
 
 	for _, table := range schemaFile.Tables {
-		if table.Name == name {
+		if table.Name == name && (validFor == int(table.ValidFor) || table.ValidFor == schema.ValidForCommon) {
 			sch = table
+			break
 		}
 	}
 
@@ -86,7 +87,7 @@ func ImportHeaders(name string, datFile *dat.DatFile, schemaFile *schema.SchemaF
 
 		headers = append(headers, &header)
 
-		offset += header.HeaderLength(datFile.FieldSizes)
+		offset += header.HeaderLength(datFile.FieldSize)
 	}
 
 	return headers

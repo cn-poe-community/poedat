@@ -1,4 +1,4 @@
-package export
+package cli
 
 import (
 	"encoding/json"
@@ -29,5 +29,5 @@ func TestDatToJSON(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	DatToJSON(datFile, &schemaFile, "BaseItemTypes")
+	DatToJSON(datFile, &schemaFile, "BaseItemTypes", 1)
 }

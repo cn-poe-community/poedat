@@ -1,4 +1,4 @@
-package export
+package cli
 
 import (
 	"encoding/json"
@@ -10,8 +10,8 @@ import (
 	"github.com/emirpasic/gods/maps/linkedhashmap"
 )
 
-func DatToJSON(datFile *dat.DatFile, shecmaFile *schema.SchemaFile, tableName string) []byte {
-	headers := ImportHeaders(tableName, datFile, shecmaFile)
+func DatToJSON(datFile *dat.DatFile, shecmaFile *schema.SchemaFile, tableName string, gameVersion int) []byte {
+	headers := ImportHeaders(tableName, datFile, shecmaFile, gameVersion)
 	rows := ExportAllRows(headers, datFile)
 
 	rowMaps := []*linkedhashmap.Map{}
@@ -22,7 +22,7 @@ func DatToJSON(datFile *dat.DatFile, shecmaFile *schema.SchemaFile, tableName st
 		for i, header := range headers {
 			name := header.Name
 			if len(name) == 0 {
-				name = fmt.Sprintf("Unknown %d", i)
+				name = fmt.Sprintf("Unknown %d", i+1)
 			}
 			rowMap.Put(name, row[i])
 		}
